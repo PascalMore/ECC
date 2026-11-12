@@ -135,6 +135,10 @@ NEXT ECC MOVE
 - do not treat "present in config" as "working"
 - do not fix lower-value redundancy before naming the broken high-signal path
 - do not widen the task into a repo rewrite if the user asked for inventory first
+- for nightly Git jobs, trace scheduler → wrapper redirection → repository log → exact failing Git operation. A `set -e` script that pushes submodules before staging the parent can leave the parent entirely uncommitted when one submodule push fails; distinguish this from a parent commit that merely failed to push.
+- inspect both `.gitmodules` and the submodule's actual origin, plus the effective credential-helper source. Successful SSH authentication does not validate an HTTPS push path, and successful public fetches do not prove push authentication. Do not run a mutating auto-push script merely to reproduce a diagnostic failure; obtain authorization before changing URLs, staging, committing or pushing.
+- a nightly auto-push that aborts with `set -e` on the FIRST submodule push error leaves the parent repository entirely uncommitted. Fix the transport (e.g. HTTPS→SSH) AND make submodule initialization non-destructive: a blanket `git submodule update --init` resets every populated submodule to the parent's recorded gitlink, discarding later submodule commits and aborting on uncommitted submodule edits. Initialize only submodules that are not yet populated, and push submodules before staging the parent.
+- when re-running such a script manually, scope it to the affected repo via its directory env vars and read back the remote with `git ls-remote`; a clean local `status` alone does not prove the push landed.
 
 ## Verification
 
